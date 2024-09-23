@@ -1,0 +1,14 @@
+services:
+  bdd :
+    image : mysql
+    environment :
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=streamcode
+    ports :
+      - 3306:3306
+  pda : 
+    image : phpmyadmin
+    environment:
+      - PMA_HOST=bdd
+    ports :
+      - 8081:80
