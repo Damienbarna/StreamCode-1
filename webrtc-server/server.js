@@ -1,8 +1,10 @@
 const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
+const cors = require("cors");
 
 const app = express();
+app.use(cors());
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
@@ -11,6 +13,11 @@ const io = socketIo(server, {
     allowedHeaders: ["my-custom-header"],
     credentials: true,
   },
+});
+
+app.get("/active-streams", (req, res) => {
+  const activeStreamsList = Array.from(activeStreams.keys());
+  res.json(activeStreamsList);
 });
 
 const activeStreams = new Map();
