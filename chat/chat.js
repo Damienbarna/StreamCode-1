@@ -16,34 +16,30 @@ const io = socketIo(server, {
   },
 });
 
-app.get("/messages/:streamId", async (req, res) => {
-  try {
-    const messages = await Message.findAll({
-      where: { streamId: req.params.streamId },
-    });
-    res.json(messages);
-  } catch (error) {
-    console.error("Erreur lors de la récupération des messages :", error);
-    res.status(500).send("Erreur lors de la récupération des messages");
-  }
-});
-
 io.on("connection", (socket) => {
-  console.log("a user connected");
+  console.log("Un utilisateur connecté :", socket.id);
 
-  socket.on("join_chat", (userId) => {
-    console.log("à rejoint", userId, "id :", socket.id);
+  // Rejoindre une salle spécifique
+  socket.on("join_chat", (roomId) => {
+    socket.join(roomId);
+    console.log(`Socket ${socket.id} a rejoint la salle ${roomId}`);
   });
 
-  socket.on("send_message", async (message) => {
-    console.log(message);
-    io.emit("receive_message", message);
+  // Envoyer un message à une salle spécifique
+  socket.on("send_message", async (data) => {
+    const { roomId, message } = data;
+    console.log(`Message de ${socket.id} à la salle ${roomId} :`, message);
 
+    // Émettre le message uniquement à la salle spécifiée
+    io.to(roomId).emit("receive_message", message);
+
+    // Enregistrer le message dans la base de données si nécessaire
     try {
       await Message.create({
-        userId: socket.id,
+        roomId: roomId,
         content: message.content,
-        streamId: message.streamId,
+        userId: message.userId,
+        timestamp: new Date(),
       });
     } catch (error) {
       console.error("Erreur lors de l'enregistrement du message :", error);
@@ -51,11 +47,11 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log("user disconnected");
+    console.log("Utilisateur déconnecté :", socket.id);
   });
 });
 
 const PORT = process.env.PORT || 3005;
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Serveur de chat en cours d'exécution sur le port ${PORT}`);
 });
